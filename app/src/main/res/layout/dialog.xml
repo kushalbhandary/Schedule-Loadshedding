@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="300dp"
+    android:layout_height="250dp"
+    >
+   <NumberPicker
+       android:id="@+id/numberPicker1"
+       android:layout_width="wrap_content"
+       android:layout_height="wrap_content"
+       android:layout_alignParentTop="true"
+       android:layout_centerHorizontal="true"
+       android:layout_centerVertical="true"/>
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="OK"
+        android:id="@+id/okButton"
+        android:layout_below="@+id/numberPicker1"
+        android:layout_toStartOf="@+id/numberPicker1"
+        android:background="#00BFFF"
+        android:textColor="#fff"/>
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Cancel"
+        android:id="@+id/cancelButton"
+        android:layout_alignTop="@+id/okButton"
+        android:layout_toEndOf="@+id/numberPicker1"
+        android:layout_marginRight="10dp"
+        android:background="#00BFFF"
+        android:textColor="#fff"
+        />
+
+
+
+</RelativeLayout>

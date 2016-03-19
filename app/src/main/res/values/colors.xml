@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#fa0d8989</color>
+    <color name="colorPrimaryDark">#FA044E4E</color>
+    <color name="colorAccent">#6535a4</color>
+    <color name="tabsSrollColor">#cccccc</color>
+    <color name="white">#ffffff</color>
+    <color name="primaryText">#666666</color>
+
+
+    <!-- Days Box Color for test-->
+    <color name="sundayColor">#6dd0f2</color>
+    <color name="mondayColor">#ff8362</color>
+    <color name="tuesdayColor">#878fa9</color>
+    <color name="wednesdayColor">#7bc8a4</color>
+    <color name="thursdayColor">#cccccc</color>
+    <color name="fridayColor">#fbaf5d</color>
+    <color name="saturdayColor">#666666</color>
+
+
+
+</resources>
