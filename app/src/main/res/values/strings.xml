@@ -1,6 +1,8 @@
 <resources>
-    <string name="app_name">LoadShedding</string>
+    <string name="app_name">LoadShedding Schedule</string>
     <string name="action_settings">Settings</string>
     <string name="navigation_drawer_open">Open Navigaiton Drawer</string>
     <string name="navigation_drawer_closed">Close Navigation Drawer</string>
+    
+    <string name="shared_preference_file_key">com.reddevil.loadshedding.SETTINGS_PREFERENCE_KEY</string>
 </resources>

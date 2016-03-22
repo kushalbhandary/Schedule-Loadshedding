@@ -27,16 +27,15 @@ import java.io.Reader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 /**
  * Created by Sherlock on 12/22/2015.
  */
 
-
 public class Groups extends Fragment {
-   private String[] dataSun;
-    String[] dataForList = {"Sun","Mon","Tue","Wed","Thu","Fri","Sat"};
-    public static String url = "http://loadsheddingnepal.herokuapp.com/schedules";
+
+    HashMap<Integer,String[]> groupRoutine;
 
     @Nullable
     @Override
@@ -45,125 +44,49 @@ public class Groups extends Fragment {
         Bundle dataBundle = this.getArguments();
         int groupId = dataBundle.getInt("GROUP");
 
-
         View view =  inflater.inflate(R.layout.layout_group,container,false);
 
+        //Setting up recycler view
         RecyclerView scheduleView = (RecyclerView) view.findViewById(R.id.scheduleList);
         scheduleView.hasFixedSize();
-
         LinearLayoutManager layoutManager = new LinearLayoutManager(getActivity().getApplicationContext());
         scheduleView.setLayoutManager(layoutManager);
 
+        processSchedules(groupId);
 
-        ConnectivityManager connectivityManager = (ConnectivityManager)inflater.getContext()
-                .getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo info = connectivityManager.getActiveNetworkInfo();
-
-        if(info!=null&& info.isConnected()) {
-            new JSonParse(scheduleView).execute(url + groupId);
-
-        }else {
-            Toast.makeText(getActivity(),"No network. Check your connection",Toast.LENGTH_LONG).show();
-        }
+        ScheduleListAdapter adapter = new ScheduleListAdapter(groupRoutine);
+        scheduleView.setAdapter(adapter);
 
         return view;
 
     }
 
-    private class JSonParse extends AsyncTask<String, String,String> {
-        private final RecyclerView scheduleView;
-        private JSonParse(RecyclerView scheduleView) {
-            this.scheduleView = scheduleView;
-        }
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-        }
+    /**
+     * Makes string ready for displaying
+     * */
+    private void processSchedules(int groupId)
+    {
+        //Fetching routines for the provided group
+        HashMap<String,String> tempList = MainActivity.loadsheddingRoutine.getRoutine(groupId);
+        groupRoutine = new HashMap<>();
 
+        //Fetching routines for each day and storing it in array
+        String[] routines = new String[7];
+        routines[0] = tempList.get("sunday");
+        routines[1] = tempList.get("monday");
+        routines[2] = tempList.get("tuesday");
+        routines[3] = tempList.get("wednesday");
+        routines[4] = tempList.get("thursday");
+        routines[5] = tempList.get("friday");
+        routines[6] = tempList.get("saturday");
 
-
-        @Override
-        protected String doInBackground(String... params) {
-            String myUrl = params[0];
-            InputStream is = null;
-            int len = 1024;
-            try {
-                URL url = new URL(myUrl);
-                HttpURLConnection myconn = (HttpURLConnection) url.openConnection();
-                myconn.setReadTimeout(10000);
-                myconn.setConnectTimeout(15000);
-                myconn.setRequestMethod("GET");
-                myconn.setDoInput(true);
-
-                myconn.connect();
-
-                int response = myconn.getResponseCode();
-                Log.d("RESPONSE","The response is:"+response);
-                is = myconn.getInputStream();
-
-                //readIt method in android of String class error convert the input stream in string
-
-                String contentAsString = readIt(is,len);
-                return contentAsString;
-
-            }catch (Exception e){
-                e.printStackTrace();
-            }finally {
-                try {
-                    if (is!=null){
-                        is.close();
-                    }
-
-                }catch (Exception e){
-
-                }
-            }
-            return null;
-        }
-
-        public String readIt(InputStream stream , int len)throws IOException{
-            Reader reader;
-            reader = new InputStreamReader(stream,"UTF-8");
-            char[] buffer = new char[len];
-            reader.read(buffer);
-            return new String(buffer);
-
-        }
-
-        @Override
-        protected void onPostExecute(String s) {
-            try {
-                JSONObject reader = new JSONObject(s);
-
-            /*    JSONObject sunday= reader.getJSONObject("Sunday");
-                Log.d("MANSUBH",""+sunday.get("end_time_2"));*/
-
-                if (reader.has("Sunday")){
-                    JSONObject time =reader.getJSONObject("Sunday");
-                    for(int i = 0;i<time.length();i++) {
-                    }
-
-                    if(reader.has("Monday")){
-                        JSONObject timemon =reader.getJSONObject("Monday");
-                        String monstart1 = time.getString("start_time_1");
-                        String monend1 = time.getString("end_time_1");
-                        String monstart2 = time.getString("start_time_2");
-                        String monend2 = time.getString("end_time_2");
-
-                    }
-                }
-                ScheduleListAdapter adapter = new ScheduleListAdapter(dataForList,new String[] {"1", "2", "3", "4"});
-                scheduleView.setAdapter(adapter);
-
-            }catch (Exception e){
-                e.printStackTrace();
-                Log.e("ERROR","onPostExecute ",e);
-                ScheduleListAdapter adapter = new ScheduleListAdapter(dataForList,new String[] {"A", "B", "C", "D"});
-                scheduleView.setAdapter(adapter);
-
-
-            }
-
+        //Since fetched routine are concatenated using &, splitting them and storing it
+        String[] daysRoutine;
+        for (int i=0;i<routines.length;i++)
+        {
+            String[] routineItems = routines[i].split(" & ");
+            groupRoutine.put(i,routineItems);
         }
     }
+
 }

@@ -1,4 +1,4 @@
-package com.reddevil.loadshedding.adapter.helper;
+package com.reddevil.loadshedding.helper;
 
 /**
  * Created by mansubh on 1/20/16.

@@ -1,4 +1,4 @@
-package com.reddevil.loadshedding;
+package com.reddevil.loadshedding.library;
 
 /**
  * Created by mansubh on 12/20/15.
@@ -17,6 +17,9 @@ import android.view.ViewGroup;
 import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+
+import com.reddevil.loadshedding.R;
+
 /**
  * To be used with ViewPager to provide a tab indicator component which give constant feedback as to
  * the user's scroll progress.

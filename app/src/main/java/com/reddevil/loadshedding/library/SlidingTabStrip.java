@@ -1,4 +1,4 @@
-package com.reddevil.loadshedding;
+package com.reddevil.loadshedding.library;
 
 /**
  * Created by mansubh on 12/20/15.
