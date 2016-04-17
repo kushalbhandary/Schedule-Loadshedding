@@ -24,7 +24,7 @@ public class Routine {
     }
 
     /*
-    * Returns routine list for given group
+    * Returns routine list for given group 1-7
     * */
     public HashMap<String,String> getRoutine(int groupId)
     {
@@ -34,7 +34,7 @@ public class Routine {
 
 
     /*
-    * Returns routine for given group for given day
+    * Returns routine for given group(1-7) for given day
     * */
     public String getRoutine(int groupId,String day)
     {

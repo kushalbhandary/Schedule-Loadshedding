@@ -60,7 +60,6 @@ public class ScheduleListAdapter extends RecyclerView.Adapter<ScheduleListAdapte
 
         //Get Data
         String[] routines = routineList.get(position);
-        Log.v(TAG,"Routine: " + routines);
 
         holder.day.setText(days[position]);
 

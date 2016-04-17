@@ -37,7 +37,6 @@ public class StorageHelper extends SQLiteOpenHelper {
 
     private static final String DROP_TABLE = "DROP TABLE IF EXISTS " + TABLE_NAME;
 
-
     public StorageHelper(Context context)
     {
         super(context,DATABASE_NAME,null,DATABASE_VERSION);

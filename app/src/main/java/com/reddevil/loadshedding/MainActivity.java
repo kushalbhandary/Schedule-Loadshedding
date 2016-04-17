@@ -1,10 +1,8 @@
 package com.reddevil.loadshedding;
 
-import android.app.Dialog;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Typeface;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.view.ViewPager;
@@ -15,15 +13,14 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
-import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.reddevil.loadshedding.adapter.ViewPagerAdapter;
-import com.reddevil.loadshedding.datastorage.StorageHelper;
+import com.reddevil.loadshedding.datastorage.DataRetriever;
 import com.reddevil.loadshedding.helper.AppConfig;
 import com.reddevil.loadshedding.helper.Routine;
+import com.reddevil.loadshedding.helper.TimeParser;
 import com.reddevil.loadshedding.networking.ScheduleUpdater;
 
 import java.util.HashMap;
@@ -31,13 +28,17 @@ import java.util.HashMap;
 public class MainActivity extends AppCompatActivity implements ViewPager.OnPageChangeListener,NavigationView.OnNavigationItemSelectedListener{
 
     private static String TAG = "MainActivity";
-    ViewPager pager;
+    ViewPager mPager;
     ViewPagerAdapter adapter;
 
     private String viewPagerTitles[] = {"Group 1","Group 2","Group 3","Group 4","Group 5","Group 6","Group 7"};
     private int numberOfPages = 7;
-    private TextView groupNameVew;
+    private TextView groupNameVew,descriptionLabel,hoursLabel,minutesLabel,secondsLabel;
+    private Handler mHandler;
+    private Runnable mRunnable;
+    private boolean isTimeUpdaterStarted = true;
 
+    //making it static field to deal with it later
     public static Routine loadsheddingRoutine;
 
     @Override
@@ -52,8 +53,8 @@ public class MainActivity extends AppCompatActivity implements ViewPager.OnPageC
         final AppConfig config = new AppConfig(this);
         if(!config.getAppInstalledStatus())
         {
-            Log.v(TAG,"App is not installed, Fetching routine");
-            ScheduleUpdater updater = new ScheduleUpdater(this);
+            //App is running for first time after installation, Fetching routine and updating it
+            final ScheduleUpdater updater = new ScheduleUpdater(this);
             updater.setListener(new ScheduleUpdater.OnScheduleUpdatedListener() {
                 @Override
                 public void isScheduleUpdated(Boolean isUpdated, String message) {
@@ -69,18 +70,80 @@ public class MainActivity extends AppCompatActivity implements ViewPager.OnPageC
                     Log.v(TAG,"GetUpdatedRoutine Called");
                     loadsheddingRoutine = routine;
                     setupViewpager();
+                    updateTime();
                 }
             });
             updater.update();
         }
         else
         {
-            Log.v(TAG,"App is installed, Fetching routine");
+            //App has been run at least once after installation,thus fetching routine from database
             loadsheddingRoutine = new Routine();
-            prepareRoutineData();
+            DataRetriever retriever = new DataRetriever(this);
+            loadsheddingRoutine = retriever.retrieveData();
             setupViewpager();
+            updateTime();
         }
 
+    }
+
+    private void updateTime()
+    {
+        isTimeUpdaterStarted = true;
+        /***** GET CURRENT GROUP HERE ****/
+        int currentGroup = 4;
+
+        HashMap<String,String> schedulesList = loadsheddingRoutine.getRoutine(currentGroup);
+        final TimeParser parser = new TimeParser();
+        parser.setRoutineData(schedulesList);
+
+        mHandler = new Handler();
+        mRunnable = new Runnable() {
+            @Override
+            public void run() {
+                int[] remainingTime = parser.getRemainingTime();
+                hoursLabel.setText(addPadding(remainingTime[0]));
+                minutesLabel.setText(addPadding(remainingTime[1]));
+                secondsLabel.setText(addPadding(remainingTime[2]));
+                if (remainingTime[3] == 0)
+                {
+                    descriptionLabel.setText("Power goes after");
+                }
+                else
+                {
+                    descriptionLabel.setText("Power comes after");
+                }
+
+                mHandler.postDelayed(this,1000);
+            }
+        };
+        mHandler.post(mRunnable);
+    }
+
+    private String addPadding(int num)
+    {
+        if (num < 10){
+            return String.format("%02d",num);
+        }
+        return String.valueOf(num);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        if(!isTimeUpdaterStarted)
+        {
+            updateTime();
+        }
+    }
+
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        isTimeUpdaterStarted = false;
+        mHandler.removeCallbacks(mRunnable);
     }
 
     private void setupViewpager()
@@ -88,75 +151,28 @@ public class MainActivity extends AppCompatActivity implements ViewPager.OnPageC
         Log.v(TAG,"Setting up viewpager");
         //creating viewpager adapter
         adapter = new ViewPagerAdapter(getSupportFragmentManager(),numberOfPages, loadsheddingRoutine);
-        //assingning view pager view and setting the adapter
-        pager =(ViewPager)findViewById(R.id.pager);
-        pager.addOnPageChangeListener(this);
-        pager.setAdapter(adapter);
-    }
-
-
-    private void prepareRoutineData()
-    {
-        StorageHelper helper = new StorageHelper(this);
-        SQLiteDatabase db = helper.getReadableDatabase();
-
-        String[] projections = {
-                StorageHelper.COLUMN_GROUP,
-                StorageHelper.COLUMN_DAY_SUNDAY,
-                StorageHelper.COLUMN_DAY_MONDAY,
-                StorageHelper.COLUMN_DAY_TUESDAY,
-                StorageHelper.COLUMN_DAY_WEDNESDAY,
-                StorageHelper.COLUMN_DAY_THURSDAY,
-                StorageHelper.COLUMN_DAY_FRIDAY,
-                StorageHelper.COLUMN_DAY_SATURDAY
-        };
-
-        Cursor cursor = db.query(StorageHelper.TABLE_NAME,projections,null,null,null,null,null);
-        if(cursor != null && cursor.moveToFirst())
-        {
-            HashMap<String,String> routineMap;
-            do {
-                routineMap = new HashMap<>();
-
-                int groupId = cursor.getInt(cursor.getColumnIndex(StorageHelper.COLUMN_GROUP));
-                String sunRoutine = cursor.getString(cursor.getColumnIndex(StorageHelper.COLUMN_DAY_SUNDAY));
-                String monRoutine = cursor.getString(cursor.getColumnIndex(StorageHelper.COLUMN_DAY_MONDAY));
-                String tueRoutine = cursor.getString(cursor.getColumnIndex(StorageHelper.COLUMN_DAY_TUESDAY));
-                String wedRoutine = cursor.getString(cursor.getColumnIndex(StorageHelper.COLUMN_DAY_WEDNESDAY));
-                String thuRoutine = cursor.getString(cursor.getColumnIndex(StorageHelper.COLUMN_DAY_THURSDAY));
-                String friRoutine = cursor.getString(cursor.getColumnIndex(StorageHelper.COLUMN_DAY_FRIDAY));
-                String satRoutine = cursor.getString(cursor.getColumnIndex(StorageHelper.COLUMN_DAY_SATURDAY));
-
-                routineMap.put("sunday",sunRoutine);
-                routineMap.put("monday",monRoutine);
-                routineMap.put("tuesday",tueRoutine);
-                routineMap.put("wednesday",wedRoutine);
-                routineMap.put("thursday",thuRoutine);
-                routineMap.put("friday",friRoutine);
-                routineMap.put("saturday",satRoutine);
-
-                loadsheddingRoutine.addRoutine(groupId,routineMap);
-            }
-            while (cursor.moveToNext());
-            cursor.close();
-        }
+        //assingning view Pager view and setting the adapter
+        mPager =(ViewPager)findViewById(R.id.pager);
+        mPager.addOnPageChangeListener(this);
+        mPager.setAdapter(adapter);
     }
 
     private void setupViews()
     {
         //Setting up views
         TextView timeRemaining = (TextView) findViewById(R.id.time_remaining_label);
-        TextView hours = (TextView) findViewById(R.id.hours);
-        TextView minutes = (TextView) findViewById(R.id.minutes);
-        TextView seconds = (TextView) findViewById(R.id.seconds);
+        hoursLabel = (TextView) findViewById(R.id.hours);
+        minutesLabel = (TextView) findViewById(R.id.minutes);
+        secondsLabel = (TextView) findViewById(R.id.seconds);
         groupNameVew = (TextView) findViewById(R.id.groupName);
+        descriptionLabel = (TextView) findViewById(R.id.time_remaining_label);
 
         //Setting custom fonts
         Typeface customFonts = Typeface.createFromAsset(getAssets(),"fonts/OpenSans-Light.ttf");
         timeRemaining.setTypeface(customFonts);
-        hours.setTypeface(customFonts);
-        minutes.setTypeface(customFonts);
-        seconds.setTypeface(customFonts);
+        hoursLabel.setTypeface(customFonts);
+        minutesLabel.setTypeface(customFonts);
+        secondsLabel.setTypeface(customFonts);
     }
 
 
@@ -171,9 +187,6 @@ public class MainActivity extends AppCompatActivity implements ViewPager.OnPageC
         NavigationView navigationView = (NavigationView)findViewById(R.id.navigation_view);
         navigationView.setNavigationItemSelectedListener(this);
     }
-
-
-
 
     //Viewpager Methods
 
@@ -223,14 +236,10 @@ public class MainActivity extends AppCompatActivity implements ViewPager.OnPageC
             case R.id.home:
                 Toast.makeText(getApplicationContext(),"home",Toast.LENGTH_LONG).show();
                 break;
-            case R.id.favourites:
 
-            case R.id.auto_update:
-
-
-
-                Toast.makeText(getApplicationContext(),"update",Toast.LENGTH_LONG).show();
+            default:
                 break;
+
         }
         DrawerLayout drawer = (DrawerLayout)findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
